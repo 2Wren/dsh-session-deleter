@@ -47,17 +47,22 @@ not installable until you approve it. Wait a minute, then check:
 npm view dsh-session-deleter versions --json --prefer-online
 ```
 
-If only `0.0.0-stage` appears, list and approve the staged version. Approving
-requires npm CLI `11.15.0` or newer, so upgrade first:
+If only `0.0.0-stage` appears, the operational version is staged and needs a
+maintainer approval after npm's malware scan. Approving in the CLI requires npm
+CLI `11.15.0` or newer, but **npm 12 requires Node `>=24.15.0`**; on Node 24.12
+install npm 11 instead:
 
 ```bash
-npm install --global npm@latest
+npm install --global npm@11
 npm stage list dsh-session-deleter
 npm stage approve <stage-id>
 ```
 
-The approval prompts for 2FA. You can approve the same staged version on
-npmjs.com if the package page shows the staged release. After approval:
+`npm stage list` can be empty for the automatic first-publish review, so the
+signed-in npmjs.com UI is the authoritative place: open the account's **Staged
+Packages** page, or the package's **Versions** tab, and approve the version
+with 2FA. The Approve button stays disabled while the malware scan runs and the
+page refreshes every minute. After approval:
 
 ```bash
 npm view dsh-session-deleter version --prefer-online   # 1.0.0
