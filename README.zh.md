@@ -1,5 +1,10 @@
 # dsh-session-deleter
 
+[![npm version](https://img.shields.io/npm/v/dsh-session-deleter.svg)](https://www.npmjs.com/package/dsh-session-deleter)
+[![CI](https://github.com/2Wren/dsh-session-deleter/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/2Wren/dsh-session-deleter/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/2Wren/dsh-session-deleter/blob/main/LICENSE)
+![DSH 0.2.2-rc.2](https://img.shields.io/badge/DSH-0.2.2--rc.2-blue)
+
 在 DeepSeek Harness 侧栏中永久删除对话，包括已归档的对话，并在删除前确认。
 这是一个非官方社区插件，与 DeepSeek 官方无关。
 

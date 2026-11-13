@@ -1,5 +1,10 @@
 # dsh-session-deleter
 
+[![npm version](https://img.shields.io/npm/v/dsh-session-deleter.svg)](https://www.npmjs.com/package/dsh-session-deleter)
+[![CI](https://github.com/2Wren/dsh-session-deleter/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/2Wren/dsh-session-deleter/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/2Wren/dsh-session-deleter/blob/main/LICENSE)
+![DSH 0.2.2-rc.2](https://img.shields.io/badge/DSH-0.2.2--rc.2-blue)
+
 Permanently delete DeepSeek Harness conversations from the sidebar — ordinary
 conversations and archived ones, with a confirmation step. This is an
 unofficial community plugin, not affiliated with DeepSeek.
