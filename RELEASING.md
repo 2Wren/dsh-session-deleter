@@ -10,6 +10,10 @@ the plugin deletes.
    not have one. An npm account is separate from GitHub; you can sign up with
    GitHub OAuth.
 2. Verify the account's email address and enable two-factor authentication.
+   Choose **Authorization and writes** (not just authorization): npm requires a
+   second factor for publishing. If npm refuses the first publish with
+   `403 ... Two-factor authentication or granular access token with bypass 2fa
+   enabled is required`, see [Troubleshooting](#troubleshooting).
 3. Check that the package name is still free:
 
    ```bash
@@ -74,6 +78,42 @@ If the trusted publisher is unavailable (for example, publishing from a fork),
 publish manually with `npm login` and `npm publish --access public`. Do not push
 a release tag for a version that was already published manually unless the
 workflow's existence check is present; it will skip the duplicate publish.
+
+## Troubleshooting
+
+### `403 ... Two-factor authentication or granular access token with bypass 2fa enabled is required`
+
+The account has no 2FA, or its 2FA mode does not cover writes. Pick one:
+
+**A. Use 2FA at publish time (recommended).** On npmjs.com open the account menu
+→ **Account Settings** → **Two-Factor Authentication** and choose
+**Authorization and writes**. Then publish again:
+
+```bash
+npm publish --access public
+# or, when npm does not prompt:
+npm publish --access public --otp=123456
+```
+
+**B. Use a granular access token with 2FA bypass.** Enabling account 2FA is
+still required. On npmjs.com → **Access Tokens** → **Generate New Token** →
+**Granular Access Token**, grant **Read and write** for all packages, enable
+**Bypass 2FA**, and pass the token for one command only:
+
+```bash
+read -s NPM_TOKEN        # paste the token, press Enter
+npm publish --access public --//registry.npmjs.org/:_authToken="$NPM_TOKEN"
+unset NPM_TOKEN
+```
+
+Never commit the token or paste it into an issue. npm is restricting bypass
+tokens, so use trusted publishing for later releases.
+
+### The package name is already taken
+
+`npm view dsh-session-deleter` no longer returns `404`. Choose another name and
+update `package.json`, the client factory id in `client.js`, the bundle patch,
+and both READMEs.
 
 ## After publishing
 
