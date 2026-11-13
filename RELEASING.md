@@ -36,8 +36,42 @@ npm test
 npm publish --access public
 ```
 
-Enter the one-time password when npm asks. This claims the package name and
-publishes `1.0.0`.
+Enter the one-time password when npm asks. This claims the package name.
+
+npm may create a public **`0.0.0-stage` placeholder** and hold `1.0.0` in the
+staged-release queue for approval, even for a plain `npm publish`. That
+placeholder belongs to the publisher and is not a hijack; the real version is
+not installable until you approve it. Wait a minute, then check:
+
+```bash
+npm view dsh-session-deleter versions --json --prefer-online
+```
+
+If only `0.0.0-stage` appears, list and approve the staged version. Approving
+requires npm CLI `11.15.0` or newer, so upgrade first:
+
+```bash
+npm install --global npm@latest
+npm stage list dsh-session-deleter
+npm stage approve <stage-id>
+```
+
+The approval prompts for 2FA. You can approve the same staged version on
+npmjs.com if the package page shows the staged release. After approval:
+
+```bash
+npm view dsh-session-deleter version --prefer-online   # 1.0.0
+npm view dsh-session-deleter dist-tags --json          # latest -> 1.0.0
+```
+
+Only then push the release tag; the publish workflow checks whether the version
+already exists and skips a duplicate publish.
+
+Optionally retire the placeholder:
+
+```bash
+npm deprecate dsh-session-deleter@0.0.0-stage "Temporary first-publish placeholder"
+```
 
 Then register the GitHub workflow as the trusted publisher:
 
