@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Conversation deleter",
+    "description": "Adds Delete conversation permanently to the conversation row menu, so an ordinary or archived conversation can be erased from disk instead of only archived. Deletion is confirmed first and cannot be undone; a conversation with running work is refused."
+  }
+}

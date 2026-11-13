@@ -1,0 +1,59 @@
+{
+  "name": "dsh-session-deleter",
+  "version": "1.0.0",
+  "description": "Permanently delete DeepSeek Harness conversations, including archived ones, from the sidebar.",
+  "type": "module",
+  "license": "MIT",
+  "author": "2Wren (https://github.com/2Wren)",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "conversation",
+    "session",
+    "delete"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2Wren/dsh-session-deleter.git"
+  },
+  "homepage": "https://github.com/2Wren/dsh-session-deleter#readme",
+  "bugs": {
+    "url": "https://github.com/2Wren/dsh-session-deleter/issues"
+  },
+  "engines": {
+    "dsh": "^0.2.2-rc.2"
+  },
+  "scripts": {
+    "test": "node --test",
+    "pack:check": "npm pack --dry-run"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "CHANGELOG.md",
+    "locale/*.json",
+    "icon.svg"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-context-menu"
+      ]
+    }
+  }
+}

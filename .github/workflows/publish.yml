@@ -1,0 +1,44 @@
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js and the npm registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing (OIDC) requires npm >= 11.5.1; the runner image may
+      # ship an older npm.
+      - name: Upgrade npm
+        run: npm install --global npm@latest
+      - name: Run the test suite
+        run: npm test
+      - name: Check whether this version is already published
+        id: published
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "dsh-session-deleter@${VERSION}" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "dsh-session-deleter@${VERSION} is already published; skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      # Trusted publishing needs this repository and workflow registered under
+      # the package's Settings -> Trusted Publisher on npmjs.com. The first
+      # version must be published manually; see RELEASING.md.
+      - name: Publish with provenance
+        if: steps.published.outputs.exists == 'false'
+        run: npm publish --provenance --access public
