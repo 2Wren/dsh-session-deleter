@@ -19,7 +19,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-          registry-url: https://registry.npmjs.org
+      # Trusted publishing authenticates with GitHub's OIDC token. Do not set
+      # up token-based npm authentication here; npm otherwise prefers the
+      # placeholder NODE_AUTH_TOKEN supplied by setup-node.
       # Trusted publishing (OIDC) requires npm >= 11.5.1; the runner image may
       # ship an older npm.
       - name: Upgrade npm
