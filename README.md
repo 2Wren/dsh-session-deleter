@@ -26,8 +26,8 @@ derived state from the profile.
   files are removed, so the row does not linger as an "Ungrouped" ghost.
 - Refuses a conversation that is running or still has reported work in progress
   (subagents, background jobs, scheduled reminders), including an archived one.
-- Refuses to delete the conversation currently open in the main view; switch to
-  another conversation first.
+- Allows deleting the conversation currently open in the main view (when idle),
+  then switches to a blank conversation in the same workspace.
 - Verifies the storage path against the Session id before deleting anything.
 - Restores the temporary archive state when closing or removing the
   conversation fails.
@@ -121,8 +121,6 @@ plugin against a new DSH release before widening it.
 
 ## Limitations
 
-- The conversation open in the main view cannot be deleted from its dialog; the
-  button is disabled and the dialog explains why.
 - A conversation opened before this plugin version loaded may not have a
   retained handle; its row can remain as an inert entry until DeepSeek Harness
   restarts, although the log files are already gone.

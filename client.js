@@ -22,7 +22,6 @@ window.__ModuleLoader__.load({
         'dialog.title': 'Delete this conversation permanently?',
         'dialog.description': '“{title}” and its conversation log will be deleted from this device. Shared attachments may remain. This cannot be undone.',
         'dialog.untitled': 'Untitled conversation',
-        'dialog.openWarning': 'This conversation is open in the main view. Switch to another conversation before deleting it.',
         'dialog.cancel': 'Cancel',
         'dialog.confirm': 'Delete permanently',
         'dialog.pending': 'Deleting…',
@@ -54,7 +53,6 @@ window.__ModuleLoader__.load({
         'dialog.title': '确定永久删除此对话？',
         'dialog.description': '将从此设备删除“{title}”的对话记录。共享附件可能保留。此操作无法撤销。',
         'dialog.untitled': '未命名对话',
-        'dialog.openWarning': '该对话正在主视图中打开。请先切换到其他对话再删除。',
         'dialog.cancel': '取消',
         'dialog.confirm': '永久删除',
         'dialog.pending': '正在删除…',
@@ -95,7 +93,6 @@ window.__ModuleLoader__.load({
 .dsd-close:disabled{opacity:.4;cursor:not-allowed}
 .dsd-description{margin:0;padding:0 24px;font-size:14px;line-height:22px;color:var(--dsw-alias-label-primary);white-space:pre-line}
 .dsd-error{margin:0 24px;padding:8px 10px;border-radius:8px;font-size:13px;line-height:20px;color:var(--dsw-alias-state-error-primary);background:var(--dsw-alias-bg-layer-1)}
-.dsd-warning{margin:0 24px;font-size:13px;line-height:20px;color:var(--dsw-alias-state-warn-primary)}
 .dsd-status{margin:0 24px;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
 .dsd-footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 24px}
 .dsd-button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;height:36px;padding:0 14px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;line-height:22px;color:var(--dsw-alias-label-primary);background:transparent}
@@ -132,7 +129,24 @@ window.__ModuleLoader__.load({
     }
 
     const store = createDialogStore()
-    const runtime = { t: key => key, contextMenus: null, sessions: null }
+    const runtime = { t: key => key, contextMenus: null, sessions: null, getService: () => undefined }
+
+    function isOpenInMainView(sessionId) {
+      if (sessionId === null) return false
+      return (runtime.sessions?.list?.getSnapshot()?.byId?.[sessionId]?.retainedBy?.mainView ?? 0) > 0
+    }
+
+    function anyOtherOpenInMainView(sessionId) {
+      const byId = runtime.sessions?.list?.getSnapshot()?.byId
+      if (!byId) return false
+      return Object.entries(byId).some(([id, summary]) => id !== sessionId && (summary?.retainedBy?.mainView ?? 0) > 0)
+    }
+
+    function workspaceIdForSession(sessionId) {
+      const items = runtime.getService('workspaces')?.list?.getSnapshot()?.items
+      if (!Array.isArray(items)) return undefined
+      return items.find(item => Array.isArray(item.sessionIds) && item.sessionIds.includes(sessionId))?.workspaceId
+    }
 
     const dialog = {
       open(sessionId, title) {
@@ -145,36 +159,50 @@ window.__ModuleLoader__.load({
       async confirm() {
         const current = store.getSnapshot()
         if (!current.open || current.pending || current.sessionId === null) return
+        const targetId = current.sessionId
+        const wasOpenInMainView = isOpenInMainView(targetId)
+        const workspaceId = wasOpenInMainView ? workspaceIdForSession(targetId) : undefined
         store.set({ ...current, pending: true, error: null })
-        const finish = () => {
+        const finish = async () => {
           store.set({ open: false, sessionId: null, title: '', pending: false, error: null })
           runtime.contextMenus?.notify(runtime.t('delete.done'), true)
-          const refresh = runtime.sessions?.refresh()
-          if (refresh !== undefined && typeof refresh.catch === 'function') {
-            refresh.catch((error) => { console.warn('session-deleter: Session list refresh failed', error) })
+          try {
+            await runtime.sessions?.refresh()
+          } catch (error) {
+            console.warn('session-deleter: Session list refresh failed', error)
+          }
+          if (wasOpenInMainView && !anyOtherOpenInMainView(targetId)) {
+            try {
+              runtime.getService('uiWorkspace')?.startSession(workspaceId)
+            } catch (error) {
+              console.warn('session-deleter: switching away from deleted conversation failed', error)
+            }
           }
         }
+        let response
+        let payload = null
         try {
-          const response = await fetch(DELETE_ROUTE, {
+          response = await fetch(DELETE_ROUTE, {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ sessionId: current.sessionId }),
+            body: JSON.stringify({ sessionId: targetId }),
           })
-          const payload = await response.json().catch(() => null)
-          if (!response.ok || payload === null || payload.ok !== true) {
-            // The log is already gone: close and refresh instead of asking again.
-            if (payload?.code === 'session/not-found') {
-              finish()
-              return
-            }
-            store.set({ ...store.getSnapshot(), pending: false, error: errorText(payload) })
-            return
-          }
-          finish()
+          payload = await response.json().catch(() => null)
         } catch {
           store.set({ ...store.getSnapshot(), pending: false, error: runtime.t('error.network') })
+          return
         }
+        if (!response.ok || payload === null || payload.ok !== true) {
+          // The log is already gone: close and refresh instead of asking again.
+          if (payload?.code === 'session/not-found') {
+            await finish()
+            return
+          }
+          store.set({ ...store.getSnapshot(), pending: false, error: errorText(payload) })
+          return
+        }
+        await finish()
       },
     }
 
@@ -254,13 +282,6 @@ window.__ModuleLoader__.load({
       const state = React.useSyncExternalStore(store.subscribe, store.getSnapshot)
       const t = typeof props.t === 'function' ? props.t : runtime.t
       const dialogRef = React.useRef(null)
-      const useSessions = props.useSessions
-      const targetId = state.sessionId
-      // The Workspace main-view reference is the only client-side evidence that
-      // this conversation is currently displayed.
-      const openInMainView = typeof useSessions !== 'function'
-        ? false
-        : useSessions(snapshot => targetId !== null && (snapshot.byId[targetId]?.retainedBy?.mainView ?? 0) > 0)
 
       React.useEffect(() => {
         if (state.pending) dialogRef.current?.focus?.()
@@ -337,9 +358,6 @@ window.__ModuleLoader__.load({
               }, '×'),
             ),
             h('p', { className: 'dsd-description' }, t('dialog.description', { title })),
-            openInMainView
-              ? h('p', { className: 'dsd-warning', role: 'alert' }, t('dialog.openWarning'))
-              : null,
           ),
           state.error === null ? null : h('div', { className: 'dsd-error', role: 'alert' }, state.error),
           pending ? h('div', { className: 'dsd-status', role: 'status' }, t('dialog.pending')) : null,
@@ -353,7 +371,7 @@ window.__ModuleLoader__.load({
             h('button', {
               type: 'button',
               className: 'dsd-button dsd-danger',
-              disabled: pending || openInMainView,
+              disabled: pending,
               onClick: () => { void dialog.confirm() },
             }, t('dialog.confirm')),
           ),
@@ -368,6 +386,7 @@ window.__ModuleLoader__.load({
         runtime.t = ctx.locale.bind(NS)
         runtime.contextMenus = ctx.contextMenus
         runtime.sessions = ctx.sessions
+        runtime.getService = typeof ctx.get === 'function' ? name => ctx.get(name) : () => undefined
         ctx.effect(() => {
           const element = document.createElement('style')
           element.dataset.sessionDeleter = ''

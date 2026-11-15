@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-11-15
+
+### Changed
+
+- Allow deleting the conversation currently open in the main view directly from
+  its confirmation dialog. After deletion succeeds, refresh the session list and
+  switch to a blank session in the same workspace (or clear/fallback when
+  ungrouped). Host safety refusals for running turns and active work still keep
+  the conversation open and display the error inline.
+
 ## [1.0.0] - 2026-11-13
 
 ### Added

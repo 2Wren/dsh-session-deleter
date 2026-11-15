@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-deleter",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Permanently delete DeepSeek Harness conversations, including archived ones, from the sidebar.",
   "type": "module",
   "license": "MIT",
